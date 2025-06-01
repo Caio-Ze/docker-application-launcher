@@ -89,7 +89,7 @@ run_app() {
     fi
     
     # Add volumes
-    local volumes=$(jq -r '.volumes[]? | "--v \(.host):\(.container)"' "$app_file" 2>/dev/null)
+    local volumes=$(jq -r '.volumes[]? | "-v \(.host):\(.container)"' "$app_file" 2>/dev/null)
     if [[ -n "$volumes" ]]; then
         # Expand environment variables in volumes
         volumes=$(echo "$volumes" | envsubst)
