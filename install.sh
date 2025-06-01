@@ -116,15 +116,6 @@ fi
 echo ""
 echo "🎉 Installation completed successfully!"
 echo ""
-
-# Automatically reload shell configuration
-if [[ -n "$SHELL_CONFIG" ]]; then
-    echo "🔄 Reloading shell configuration..."
-    source "$SHELL_CONFIG"
-    echo "✅ Shell configuration reloaded - aliases are now available!"
-fi
-
-echo ""
 echo "📋 How to use:"
 echo "   • Type 'dockerapps' or 'da' in terminal"
 echo "   • Double-click 'Docker Apps.command' on desktop"
@@ -132,4 +123,7 @@ echo "   • Run '$INSTALL_DIR/scripts/docker-app-launcher.sh' directly"
 echo ""
 echo "📁 Configuration directory: $INSTALL_DIR"
 echo "📖 Add more apps by creating JSON files in: $INSTALL_DIR/apps/"
+echo ""
+echo "🔄 To use the aliases immediately, run: source ~/.zshrc"
+echo "   Or simply open a new terminal window"
 echo ""
