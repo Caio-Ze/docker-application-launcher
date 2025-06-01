@@ -116,6 +116,23 @@ fi
 echo ""
 echo "🎉 Installation completed successfully!"
 echo ""
+
+# Create a helper script to reload aliases in the current shell
+cat > "/tmp/docker-app-launcher-reload.sh" << 'EOF'
+#!/bin/zsh
+# Helper script to reload Docker App Launcher aliases
+if [[ -f "$HOME/.zshrc" ]]; then
+    # Source only the Docker App Launcher aliases, not the entire .zshrc
+    alias dockerapps="$HOME/.docker-app-launcher/scripts/docker-app-launcher.sh"
+    alias da="$HOME/.docker-app-launcher/scripts/docker-app-launcher.sh"
+    echo "✅ Docker App Launcher aliases loaded!"
+    echo "You can now use 'dockerapps' or 'da' commands"
+else
+    echo "⚠️  .zshrc not found. Please restart your terminal."
+fi
+EOF
+chmod +x "/tmp/docker-app-launcher-reload.sh"
+
 echo "📋 How to use:"
 echo "   • Type 'dockerapps' or 'da' in terminal"
 echo "   • Double-click 'Docker Apps.command' on desktop"
@@ -124,6 +141,20 @@ echo ""
 echo "📁 Configuration directory: $INSTALL_DIR"
 echo "📖 Add more apps by creating JSON files in: $INSTALL_DIR/apps/"
 echo ""
-echo "🔄 To use the aliases immediately, run: source ~/.zshrc"
-echo "   Or simply open a new terminal window"
+echo "🔄 Loading aliases for immediate use..."
+
+# Try to load aliases in a Mac-compatible way
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # For macOS, execute the helper script in the user's shell
+    if command -v zsh &> /dev/null; then
+        zsh "/tmp/docker-app-launcher-reload.sh"
+    else
+        echo "🔄 Please run: source ~/.zshrc"
+        echo "   Or open a new terminal window"
+    fi
+else
+    echo "🔄 Please run: source ~/.zshrc"
+    echo "   Or open a new terminal window"
+fi
+
 echo ""
