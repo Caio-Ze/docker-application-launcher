@@ -1,156 +1,95 @@
 #!/bin/bash
 
-# Docker Application Launcher - Installation Script
-# This script installs the Docker Application Launcher system-wide
+# Docker Application Launcher - Installer
+# Standard installer for production environments
 
 set -e
 
-echo "🐳 Docker Application Launcher - Installation"
-echo "=============================================="
+# Configuration
+INSTALL_DIR="$HOME/DockerApplicationLauncher"
+DATA_DIR="$INSTALL_DIR/data"
+OUTPUT_DIR="$INSTALL_DIR/output"
+REGISTRY="localhost/docker-application-launcher"
+TAG="latest"
 
-# Check if Docker is installed
+# Check Docker
 if ! command -v docker &> /dev/null; then
-    echo "❌ Docker is not installed. Please install Docker Desktop first:"
-    echo "   https://www.docker.com/products/docker-desktop/"
+    echo "❌ Docker is not installed. Please install Docker first."
+    echo "Visit https://docs.docker.com/get-docker/ for installation instructions."
     exit 1
 fi
 
-# Check if Docker is running
 if ! docker info &> /dev/null; then
-    echo "❌ Docker is not running. Please start Docker Desktop and try again."
+    echo "❌ Docker is not running. Please start Docker first."
     exit 1
 fi
 
-echo "✅ Docker is installed and running"
+echo "🐳 Docker Application Launcher - Installation"
+echo "============================================="
+echo "Install directory: $INSTALL_DIR"
+echo "Registry: $REGISTRY"
+echo "Tag: $TAG"
+echo ""
 
-# Create installation directory
-INSTALL_DIR="$HOME/.docker-app-launcher"
-mkdir -p "$INSTALL_DIR"
+# Create directories
+mkdir -p "$INSTALL_DIR" "$DATA_DIR" "$OUTPUT_DIR"
 mkdir -p "$INSTALL_DIR/scripts"
-mkdir -p "$INSTALL_DIR/apps"
+mkdir -p "$INSTALL_DIR/applications/utils"
 
-echo "📁 Created installation directory: $INSTALL_DIR"
+# Copy core files
+echo "📦 Copying files..."
+cp launcher.py "$INSTALL_DIR/"
+cp Dockerfile.orchestrator "$INSTALL_DIR/"
+cp Dockerfile.script-template "$INSTALL_DIR/"
+cp requirements.txt "$INSTALL_DIR/"
+cp README.md "$INSTALL_DIR/"
+cp TECHNICAL_OVERVIEW.txt "$INSTALL_DIR/"
 
-# Download the main launcher script
-echo "📥 Downloading launcher script..."
-curl -sSL https://raw.githubusercontent.com/Caio-Ze/docker-application-launcher/master/scripts/docker-app-launcher.sh -o "$INSTALL_DIR/scripts/docker-app-launcher.sh"
-chmod +x "$INSTALL_DIR/scripts/docker-app-launcher.sh"
+# Copy scripts
+cp scripts/build-all.sh "$INSTALL_DIR/scripts/"
+cp scripts/add-script.sh "$INSTALL_DIR/scripts/"
+cp scripts/run-orchestrator.sh "$INSTALL_DIR/scripts/"
+cp scripts/list-containers.sh "$INSTALL_DIR/scripts/"
 
-# Download the app template
-echo "📥 Downloading app template..."
-curl -sSL https://raw.githubusercontent.com/Caio-Ze/docker-application-launcher/master/examples/app-template.json -o "$INSTALL_DIR/apps/app-template.json"
+# Copy applications
+cp applications/utils/path_utils.py "$INSTALL_DIR/applications/utils/"
+cp -r applications/*.py "$INSTALL_DIR/applications/" 2>/dev/null || true
+cp -r applications/*.sh "$INSTALL_DIR/applications/" 2>/dev/null || true
 
-# Create default apps configuration with Dynamic Bounce Manager
-echo "📝 Creating default apps configuration..."
-cat > "$INSTALL_DIR/apps/dynamic-bounce-manager.json" << 'EOF'
-{
-  "name": "Dynamic Bounce Manager",
-  "description": "Audio file monitoring and organization tool",
-  "image": "caioze/dynamic-bounce-manager:latest",
-  "ports": [],
-  "volumes": [
-    {
-      "host": "$HOME",
-      "container": "/host/Users/$(whoami)",
-      "description": "Mount home directory for file access"
-    }
-  ],
-  "environment": [
-    {
-      "name": "TERM",
-      "value": "xterm-256color",
-      "description": "Terminal compatibility"
-    }
-  ],
-  "interactive": true,
-  "remove_after_exit": true,
-  "additional_flags": "--rm"
-}
-EOF
+# Make scripts executable
+chmod +x "$INSTALL_DIR/launcher.py"
+find "$INSTALL_DIR/scripts" -name "*.sh" -exec chmod +x {} \;
 
-# Add aliases to shell configuration
-SHELL_CONFIG=""
-if [[ "$SHELL" == *"zsh"* ]]; then
-    SHELL_CONFIG="$HOME/.zshrc"
-elif [[ "$SHELL" == *"bash"* ]]; then
-    SHELL_CONFIG="$HOME/.bashrc"
-fi
-
-if [[ -n "$SHELL_CONFIG" ]]; then
-    echo "🔧 Adding shell aliases..."
-    
-    # Remove existing aliases if they exist
-    sed -i '' '/alias dockerapps=/d' "$SHELL_CONFIG" 2>/dev/null || true
-    sed -i '' '/alias da=/d' "$SHELL_CONFIG" 2>/dev/null || true
-    
-    # Add new aliases
-    echo "" >> "$SHELL_CONFIG"
-    echo "# Docker Application Launcher aliases" >> "$SHELL_CONFIG"
-    echo "alias dockerapps='$INSTALL_DIR/scripts/docker-app-launcher.sh'" >> "$SHELL_CONFIG"
-    echo "alias da='$INSTALL_DIR/scripts/docker-app-launcher.sh'" >> "$SHELL_CONFIG"
-    
-    echo "✅ Added aliases: dockerapps, da"
-fi
-
-# Create system-wide command (optional)
-if [[ -w "/usr/local/bin" ]]; then
-    ln -sf "$INSTALL_DIR/scripts/docker-app-launcher.sh" "/usr/local/bin/docker-app-launcher"
-    echo "✅ Created system-wide command: docker-app-launcher"
-fi
-
-# Create desktop shortcut for macOS
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "🖥️  Creating desktop shortcut..."
-    
-    # Create .command file for easy double-click execution
-    cat > "$HOME/Desktop/Docker Apps.command" << EOF
+# Create launcher script
+echo "📝 Creating launcher script..."
+cat > "$HOME/docker-app-launcher.sh" << EOF
 #!/bin/bash
-cd "\$HOME"
-"$INSTALL_DIR/scripts/docker-app-launcher.sh"
+# Docker Application Launcher
+cd "$INSTALL_DIR"
+./scripts/run-orchestrator.sh
 EOF
-    chmod +x "$HOME/Desktop/Docker Apps.command"
-    
-    echo "✅ Created desktop shortcut: Docker Apps.command"
+chmod +x "$HOME/docker-app-launcher.sh"
+
+# Create desktop shortcut on Linux
+if [[ "$OSTYPE" == "linux-gnu"* ]] && [ -d "$HOME/Desktop" ]; then
+    echo "🖥️ Creating desktop shortcut..."
+    cat > "$HOME/Desktop/Docker-App-Launcher.desktop" << EOF
+[Desktop Entry]
+Name=Docker Application Launcher
+Exec=$HOME/docker-app-launcher.sh
+Icon=utilities-terminal
+Terminal=true
+Type=Application
+Categories=Utility;
+EOF
+    chmod +x "$HOME/Desktop/Docker-App-Launcher.desktop"
 fi
 
 echo ""
-echo "🎉 Installation completed successfully!"
+echo "✅ Installation complete!"
 echo ""
-
-echo "📋 How to use:"
-echo "   • Type 'dockerapps' or 'da' in terminal"
-echo "   • Double-click 'Docker Apps.command' on desktop"
-echo "   • Run '$INSTALL_DIR/scripts/docker-app-launcher.sh' directly"
+echo "🚀 Run the launcher: $HOME/docker-app-launcher.sh"
 echo ""
-echo "📁 Configuration directory: $INSTALL_DIR"
-echo "📖 Add more apps by creating JSON files in: $INSTALL_DIR/apps/"
-echo ""
-
-# Create a simple activation script for immediate use
-cat > "$INSTALL_DIR/activate-aliases.sh" << EOF
-#!/bin/bash
-# Temporary alias activation for current session
-alias dockerapps='$INSTALL_DIR/scripts/docker-app-launcher.sh'
-alias da='$INSTALL_DIR/scripts/docker-app-launcher.sh'
-echo "✅ Docker App Launcher aliases activated!"
-echo "You can now use 'dockerapps' or 'da' commands in this session."
-EOF
-chmod +x "$INSTALL_DIR/activate-aliases.sh"
-
-echo "🔄 To use the aliases immediately in this terminal session, run:"
-echo "   source $INSTALL_DIR/activate-aliases.sh"
-echo ""
-echo "💡 Or simply open a new terminal window - the aliases will work automatically!"
-echo ""
-
-# Try to activate aliases in the current session if possible
-if [[ -n "$BASH_VERSION" ]] || [[ -n "$ZSH_VERSION" ]]; then
-    echo "🚀 Attempting to activate aliases in current session..."
-    alias dockerapps="$INSTALL_DIR/scripts/docker-app-launcher.sh"
-    alias da="$INSTALL_DIR/scripts/docker-app-launcher.sh"
-    echo "✅ Aliases activated! Try typing 'dockerapps' or 'da'"
-else
-    echo "ℹ️  Please run: source $INSTALL_DIR/activate-aliases.sh"
-fi
-
+echo "📂 Data directory: $DATA_DIR"
+echo "📂 Output directory: $OUTPUT_DIR"
 echo ""

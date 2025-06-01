@@ -1,263 +1,156 @@
-# 🎵 Dynamic Bounce Monitor - Docker Application Launcher
+# Docker Application Launcher - Multi-Container Application Processing Suite
 
-A comprehensive, user-friendly Docker application launcher for audio and video processing tools. Perfect for teams that need to run multiple Python scripts and shell tools without dealing with dependencies, installations, or complex commands.
+A modular, containerized application launcher system that orchestrates multiple lightweight containers for specialized tasks.
 
-## 🚀 Quick Start
+## Overview
 
-**One-command installation for end users:**
-```bash
-curl -sSL https://your-domain.com/install-dynamic-bounce-monitor.sh | bash
-```
+The Docker Application Launcher provides a unified interface to run various containerized applications. Each application runs in its own isolated container with only the dependencies it needs, making the system modular and lightweight.
 
-## ✅ Requirements
+### Key Features
 
-- **macOS, Linux, or Windows** (with Docker Desktop)
-- **Docker Desktop** installed and running
-  - Download: https://www.docker.com/products/docker-desktop/
-- **Terminal** access for interactive operations
+- **Multi-Container Architecture**: Runs applications in isolated containers
+- **Orchestrator Interface**: Simple menu-driven interface to launch containers
+- **Automatic Path Handling**: Converts file paths between host and containers
+- **Easy to Extend**: Simple process to add new script containers
+- **Consistent Environment**: Each script runs in the same environment every time
 
-## 📋 Features
+## Installation
 
-### 🎯 **Rich Terminal Interface**
-- **💻 Interactive Menu System** - Beautiful, categorized terminal interface
-- **📊 Real-time Process Monitoring** - Track running applications and their status
-- **🔧 Built-in File Browser** - Easy access to input/output directories
-- **⚡ One-Click Application Launch** - No need to remember complex commands
+### Quick Installation
 
-### 🔄 **Complete Application Suite**
-- **🎤 Voice Cleaner API v1 & v2** - Clean audio using ElevenLabs and Auphonic APIs
-- **🔄 WAV/MP3 Converter** - Convert between audio formats with quality options
-- **🎵 Audio Enhancer** - Apply volume boost, compression and loudness normalization
-- **📺 YouTube Downloader** - Download audio/video with ffmpeg processing
-- **🎬 Video Optimizer** - Optimize videos for 480p with H.264 encoding
-- **☁️ Google Drive Manager** - Manage Google Drive cache and Finder favorites
-- **📁 PTX Template Copier** - Copy .ptx files and Audio Files to São Paulo template folders
-- **📁 PTX Template Copier (No AM)** - PTX copying excluding AM folders
-- **🗂️ Folder Structure Creator** - Create folder structures from clipboard content
-
-### 🛠️ **Enterprise Features**
-- **🐳 Zero Installation** - Everything runs in Docker containers
-- **📱 Desktop Integration** - One-click shortcuts for non-technical users
-- **⚡ Auto-dependency Management** - All Python packages and system tools included
-- **🔧 Real-time Process Management** - Start, stop, and monitor applications
-- **📊 Status Monitoring** - Live process status and runtime information
-- **🗂️ File Browser** - Easy access to input/output directories
-
-## 🎮 Usage
-
-### Terminal Interface
-```bash
-# Using aliases (after installation)
-dbm                    # Short alias
-dynamic-bounce         # Full alias
-
-# Direct execution
-~/.dynamic-bounce-monitor/launch.sh
-
-# Docker command
-./scripts/run.sh
-```
-
-### Desktop Shortcuts
-- **macOS**: Double-click "Dynamic Bounce Monitor.command" on desktop
-- **Windows/Linux**: Use created shortcuts or terminal commands
-
-## 🏗️ Development & Deployment
-
-### Building the Docker Image
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/yourusername/docker-application-launcher.git
 cd docker-application-launcher
 
-# Build the image
-./scripts/build.sh
-
-# Test locally
-./scripts/run.sh
+# Run the installer
+./install.sh
 ```
 
-### Creating the Installer
+### Development Installation
+
+For development and testing, use the development installer:
+
 ```bash
-# Generate the one-click installer
-./scripts/create-installer.sh
-
-# This creates: install-dynamic-bounce-monitor.sh
+./install-dev.sh
 ```
 
-### Deployment Options
+This creates a separate installation with the `dev` tag.
 
-#### Option 1: Docker Hub (Recommended)
+## Usage
+
+### Running the Application
+
+After installation, run:
+
 ```bash
-# Tag and push to Docker Hub
-docker tag dynamic-bounce-monitor:latest your-username/dynamic-bounce-monitor:latest
-docker push your-username/dynamic-bounce-monitor:latest
-
-# Update installer script with your image name
-# Then host the installer on your web server
+~/docker-app-launcher.sh
 ```
 
-#### Option 2: Private Registry
+For development version:
+
 ```bash
-# Push to your private registry
-docker tag dynamic-bounce-monitor:latest your-registry.com/dynamic-bounce-monitor:latest
-docker push your-registry.com/dynamic-bounce-monitor:latest
+~/docker-app-launcher-dev.sh
 ```
 
-#### Option 3: Direct Distribution
-```bash
-# Save image as file
-docker save dynamic-bounce-monitor:latest | gzip > dynamic-bounce-monitor.tar.gz
+### Using the Interface
 
-# Load on target machine
-gunzip -c dynamic-bounce-monitor.tar.gz | docker load
-```
+1. Select an application from the menu
+2. Follow the prompts for input/output files
+3. Results will be saved to the output directory
 
-## 📂 Project Structure
+## Architecture
+
+The Docker Application Launcher uses a multi-container architecture:
+
+### Orchestrator Container
+
+The main container that provides the user interface and coordinates script containers. It contains:
+
+- Python with Rich UI library
+- Docker CLI to manage script containers
+- Shared utilities for all scripts
+
+### Script Containers
+
+Lightweight containers that each perform a specific function:
+
+- YouTube Downloader: Downloads videos and converts to audio
+- Voice Cleaner: Processes voice recordings
+- WAV/MP3 Converter: Converts between audio formats
+- Video Optimizer: Optimizes videos for different platforms
+- PTX Copier: Manages project files
+- And more...
+
+## Directory Structure
 
 ```
 docker-application-launcher/
-├── Dockerfile                          # Main container definition
-├── requirements.txt                    # Python dependencies
-├── launcher.py                         # Terminal interface
-├── applications/                       # Python scripts and shell tools
-│   ├── voice_cleaner_API1.py
-│   ├── voice_cleaner_API2.py
-│   ├── WAVMP3_FIX.py
-│   ├── EXTRA_PARA_NET_SPACE_FIX.py
-│   ├── youtube_downloader_PYFFMPEG.py
-│   ├── optimize_videos_PYFFMPEG.py
-│   ├── google_drive_manager_fixed.sh
-│   ├── COPY_PTX_CRF.sh
-│   ├── COPY_PTX_CRF**SEM_AM.sh
-│   └── PASTAS_CRF.py
-├── scripts/                            # Build and deployment scripts
-│   ├── build.sh                        # Build Docker image
-│   ├── run.sh                          # Run container
-│   └── create-installer.sh             # Generate installer
-└── install-dynamic-bounce-monitor.sh   # Generated installer
+├── Dockerfile.orchestrator       # Dockerfile for the main container
+├── Dockerfile.script-template    # Template for script containers
+├── applications/                 # Application scripts
+│   └── utils/                    # Shared utilities
+│       └── path_utils.py         # Path handling utilities
+├── scripts/                      # Script container management
+│   ├── add-script.sh             # Tool to add new script containers
+│   ├── build-all.sh              # Builds all containers
+│   ├── list-containers.sh        # Lists available containers
+│   ├── run-orchestrator.sh       # Runs the orchestrator container
+│   └── script-containers/        # Individual script containers
+│       ├── youtube-downloader/   # YouTube downloader script
+│       ├── voice-cleaner-api1/   # Voice cleaning (API 1)
+│       └── ...                   # Other script containers
+├── launcher.py                   # Main launcher script
+├── requirements.txt              # Python dependencies
+├── install.sh                    # Production installer
+└── install-dev.sh                # Development installer
 ```
 
-## 🔧 Configuration
+## Adding New Scripts
 
-### Environment Variables
-- `USER_HOME`: Mounted user home directory
-- `HOST_USER`: Current user name
-- `DATA_DIR`: `/app/data` (input files)
-- `OUTPUT_DIR`: `/app/output` (processed files)
-- `TEMP_DIR`: `/app/temp` (temporary files)
-
-### Volume Mounts
-- **User Home**: `$HOME` → `/host/Users/$(whoami)` (full access)
-- **Data Directory**: `$HOME/DynamicBounceMonitor/data` → `/app/data`
-- **Output Directory**: `$HOME/DynamicBounceMonitor/output` → `/app/output`
-
-## 👥 Team Deployment
-
-### For 20 Users (3 Administrators)
-
-#### Administrator Setup
-1. **Build and test** the Docker image
-2. **Push to Docker registry** (Docker Hub or private)
-3. **Host the installer script** on a web server
-4. **Share the installation command** with team
-
-#### End User Installation
-```bash
-# One command - no technical knowledge required
-curl -sSL https://your-domain.com/install-dynamic-bounce-monitor.sh | bash
-```
-
-#### User Experience
-- **Desktop shortcut** for one-click access
-- **Terminal aliases** for power users
-- **Rich terminal interface** with categorized applications
-- **Automatic updates** when you push new images
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-1. **"Docker is not running"**
-   ```bash
-   # Start Docker Desktop and wait for it to fully load
-   # Check the Docker icon in your system tray/menu bar
-   ```
-
-2. **"Image not found"**
-   ```bash
-   # Build the image first
-   ./scripts/build.sh
-   
-   # Or pull from registry
-   docker pull your-username/dynamic-bounce-monitor:latest
-   ```
-
-3. **"Permission denied"**
-   ```bash
-   # Make sure Docker Desktop is running
-   # Check that your user can run Docker commands
-   docker run hello-world
-   ```
-
-4. **"Files not accessible"**
-   ```bash
-   # Check volume mounts and permissions
-   # Files should be in: ~/DynamicBounceMonitor/data/
-   ```
-
-### Getting Help
-
-- 📧 **Issues**: Create GitHub issues for bugs
-- 📖 **Documentation**: This README and inline help
-- 🔧 **Configuration**: Check Docker logs: `docker logs dynamic-bounce-monitor`
-
-## 🎯 Perfect For
-
-- **🎵 Audio Production Teams** - Streamlined voice cleaning and processing
-- **📺 Content Creators** - YouTube downloading and video optimization
-- **🏢 Non-Technical Users** - Simple terminal interface for complex tools
-- **👥 Mixed Teams** - Both technical and non-technical users
-- **☁️ Remote Teams** - Consistent environment across all machines
-
-## 🔒 Security Considerations
-
-- **Container Isolation** - Applications run in isolated Docker containers
-- **Limited Host Access** - Only mounted directories are accessible
-- **No System Modifications** - Host system remains unchanged
-- **Easy Cleanup** - Complete removal with `docker rmi dynamic-bounce-monitor`
-
-## 📈 Scaling & Cloud Deployment
-
-### Cloud Deployment Options
-- **AWS ECS/Fargate** - Serverless container deployment
-- **Google Cloud Run** - Fully managed container platform
-- **Azure Container Instances** - Simple container hosting
-- **Kubernetes** - For large-scale deployments
-
-### Load Balancing
-- Multiple container instances for high availability
-- Shared storage for input/output files
-
-## 📄 License
-
-MIT License - feel free to use and modify for your team's needs.
-
----
-
-**🎵 Made with ❤️ for teams who want powerful audio/video tools without the complexity**
-
-### Quick Commands Reference
+To add a new script container:
 
 ```bash
-# Build and test
-./scripts/build.sh
-./scripts/run.sh
-
-# Create installer
-./scripts/create-installer.sh
-
-# Deploy to Docker Hub
-docker tag dynamic-bounce-monitor:latest username/dynamic-bounce-monitor:latest
-docker push username/dynamic-bounce-monitor:latest
+./scripts/add-script.sh my-new-script
 ```
+
+This creates a new script container template that you can customize.
+
+## Script Container Directory
+
+The `scripts/` directory contains all the script containers for the Docker Application Launcher:
+
+- **youtube-downloader**: Downloads videos from YouTube and converts to MP3
+- **voice-cleaner-api1**: Cleans voice recordings using API 1
+- **voice-cleaner-api2**: Cleans voice recordings using API 2
+- **wav-mp3-converter**: Converts between WAV and MP3 formats
+- **video-optimizer**: Optimizes videos for different platforms
+- **ptx-copier**: Copies PTX files to destination folders
+- **folder-creator**: Creates standardized folder structures
+
+## Technical Details
+
+### Dependency Management
+
+The Docker Application Launcher uses a **unified dependency approach**:
+
+1. **Orchestrator Container**: Contains all dependencies for all scripts
+2. **Script Containers**: Contain only the script and minimal runtime
+
+This approach reduces the size of script containers and speeds up build time.
+
+### Path Handling
+
+The system automatically handles path conversion between the host and containers:
+
+- Host paths are converted to container paths
+- Container paths are converted back to host paths
+- Special handling for different operating systems
+
+## License
+
+[MIT License](LICENSE)
+
+## Credits
+
+Created by [Your Name]

@@ -1,161 +1,275 @@
-DYNAMIC BOUNCE MONITOR - TECHNICAL OVERVIEW
+# DOCKER APPLICATION LAUNCHER - TECHNICAL REFERENCE
 ==========================================
 
-## ARCHITECTURE
+## ARCHITECTURE OVERVIEW
 
 **Core Components:**
-- Docker container (Python 3.11-slim base)
-- Rich terminal interface (launcher.py)
-- 10 audio/video processing applications
+- Orchestrator container (Python 3.11-slim base with Docker CLI and all core dependencies)
+- Lightweight script containers (one per application with minimal dependencies)
+- Rich terminal interface (launcher.py) in orchestrator
 - Automated installer script
 - Volume mount system for file access
+- Docker Registry support for image management
 
 **Technology Stack:**
-- Python 3.11 with Rich library for UI
-- Docker for containerization and dependency isolation
+- Python 3.11 with Rich library for orchestrator UI
+- Docker for containerization and script isolation
 - Bash scripts for system integration
-- FFmpeg, yt-dlp, and custom Python tools
+- Unified dependency approach (core dependencies in orchestrator)
 
-## DOCKER CONTAINER STRUCTURE
+## SYSTEM ENTRY POINTS
 
-**Base Image:** python:3.11-slim
-**System Dependencies:** ffmpeg, curl, wget, git, jq, nano, vim, htop, tree, unzip
-**Python Dependencies:** requests, pyffmpeg, yt-dlp, python-dotenv, colorama, rich
+**Primary Entry Points:**
+- `./scripts/run-orchestrator.sh` - Main entry point that launches the orchestrator container
+- `./launcher.py` - Python script within the orchestrator that presents the UI
+- `./install.sh` - Standard installer script for production environments
+- `./install-dev.sh` - Development installer with additional debugging features
 
-**Directory Structure:**
+**Container Management:**
+- `./scripts/build-all.sh` - Builds all containers (orchestrator and script containers)
+- `./scripts/add-script.sh` - Adds a new script container to the system
+- `./scripts/list-containers.sh` - Lists all available containers
+
+## CONTAINER ARCHITECTURE
+
+**Orchestrator Container:**
+- Base image: `python:3.11-slim`
+- Contains all core dependencies (Python libraries, system tools)
+- Has Docker CLI installed to manage script containers
+- Contains the Rich UI interface (`launcher.py`)
+- File: `Dockerfile.orchestrator`
+
+**Script Containers:**
+- Base image: `python:3.11-slim`
+- Minimal dependencies - most are in orchestrator
+- Each container provides one specific application
+- Template: `Dockerfile.script-template`
+- Generated for each script in `applications/` directory
+
+## DIRECTORY STRUCTURE
+
 ```
-/app/
-├── applications/          # All processing scripts
-├── launcher.py           # Main terminal interface
-├── data/                # Input files (mounted volume)
-├── output/              # Processed files (mounted volume)
-├── temp/                # Temporary processing files
-└── scripts/             # Build and utility scripts
+docker-application-launcher/
+├── applications/             # Source scripts
+│   ├── utils/
+│   │   └── path_utils.py     # Path handling utilities
+│   └── *.py, *.sh            # Application scripts
+├── scripts/                  # Management scripts
+│   ├── build-all.sh          # Container build script
+│   ├── run-orchestrator.sh   # Orchestrator launcher
+│   ├── add-script.sh         # Script container creator
+│   ├── list-containers.sh    # Container listing utility
+│   └── */                    # Script container directories
+├── Dockerfile.orchestrator   # Orchestrator container definition
+├── Dockerfile.script-template # Template for script containers
+├── launcher.py               # Main UI interface
+├── install.sh                # Production installer
+├── install-dev.sh            # Development installer
+├── requirements.txt          # Python dependencies
+└── README.md                 # Documentation
 ```
 
-## VOLUME MOUNT SYSTEM
+## PATH HANDLING
 
-**Critical Path Conversion:**
-- Host paths (/Users/username/) → Container paths (/host/Users/username/)
-- Automatic conversion in applications when users drag-and-drop folders
-- Bidirectional file access between host and container
+Path handling is a critical component for file access between the host and containers:
 
-**Mount Points:**
-- $HOME → /host/Users/$(whoami)           # Full home directory access
-- ~/DynamicBounceMonitor/data → /app/data # Input files
-- ~/DynamicBounceMonitor/output → /app/output # Output files
+- `path_utils.py` - Centralized utilities for path conversion
+- Host paths are mounted at `/host` prefix in containers
+- Data directory: `/app/data` in containers, `./data` on host
+- Output directory: `/app/output` in containers, `./output` on host
+
+## VOLUME MOUNTS
+
+The system uses Docker volume mounts to enable file access:
+
+- Host user home directory → `/host/home/<user>` or `/host/Users/<user>`
+- Data directory → `/app/data`
+- Output directory → `/app/output`
+
+## DEVELOPMENT AND CUSTOMIZATION
+
+**Adding New Applications:**
+1. Create new script in `applications/` directory
+2. Run `./scripts/build-all.sh` to generate containers
+3. Update `launcher.py` to include the new application in the menu
+
+**Custom Configurations:**
+- Registry: Set `REGISTRY` environment variable
+- Image tag: Set `TAG` environment variable
+- Data location: Set `DATA_DIR` environment variable
+- Output location: Set `OUTPUT_DIR` environment variable
+
+## NAMING HISTORY
+
+The Docker Application Launcher was previously known as "Dynamic Bounce Monitor" during early development. The project has been renamed to better reflect its general-purpose nature as a launcher for containerized applications. Some references to the old name may still exist in the codebase and will be gradually updated.
 
 ## APPLICATION LAUNCHER
 
 **launcher.py Features:**
 - Rich terminal UI with categorized menus
-- Real-time process monitoring and management
-- Interactive shell access within container
-- File browser for mounted directories
-- Signal handling for graceful shutdown
+- Docker container orchestration for script execution
+- Real-time process monitoring across containers
+- Volume mount management for script containers
+- Signal handling for graceful container shutdown
 
-**Application Categories:**
-1. Audio Processing (4 apps) - Voice cleaning, WAV/MP3 conversion, enhancement
-2. Content Acquisition (1 app) - YouTube downloading
-3. Video Processing (1 app) - Video optimization
-4. Cloud Storage (1 app) - Google Drive management
-5. File Management (3 apps) - PTX copying, folder structure creation
+**Application Categories & Images:**
+1. Audio Processing
+   - Voice cleaning (API1, API2)
+   - WAV/MP3 conversion
+2. Content Acquisition
+   - YouTube downloader
+3. Video Processing
+   - Video optimization
+4. File Management
+   - PTX copying utilities
+   - Folder structure creation
+
+## SCRIPT DEVELOPMENT BEST PRACTICES
+
+**Using the Script Template:**
+1. Start with `./scripts/add-script.sh my-script-name`
+2. Follow the template structure for consistent implementation
+3. Edit the script to implement your functionality
+
+**Path Conversion Best Practices:**
+- Always use `path_utils.py` for converting between host and container paths
+- Handle cases where paths might not exist gracefully:
+```python
+from utils.path_utils import convert_to_container_path, validate_path
+
+# Convert user input path to container path
+input_path = convert_to_container_path(args.input_path)
+
+# Validate the path exists
+exists, validated_path = validate_path(input_path)
+if not exists:
+    print(f"Error: Path does not exist: {input_path}")
+    sys.exit(1)
+```
+
+**Documentation:**
+- Document any special requirements or assumptions in your script
+- Provide clear usage instructions for end-users
+- Update main README.md when adding significant functionality
 
 ## KEY TECHNICAL SOLUTIONS
 
-**1. pbpaste Replacement:**
-- Problem: macOS clipboard access fails in Docker containers
-- Solution: Manual user input with "FIM" terminator instead of pbpaste command
-- Implementation: get_lines_from_clipboard() function in PASTAS_CRF.py
+**1. Container Orchestration:**
+- Problem: Managing multiple script-specific containers
+- Solution: Orchestrator container with Docker socket access
+- Implementation: launcher.py constructs and executes docker run commands
 
 **2. Path Conversion Logic:**
-- Problem: Drag-and-drop gives host paths, container needs container paths
-- Solution: Automatic prefix conversion in get_destination_directory_from_user()
+- Problem: Consistent path translation across containers
+- Solution: Standardized path conversion in each script container
 - Logic: /Users/* → /host/Users/*, /home/* → /host/home/*
 
-**3. Interactive Process Management:**
-- Real-time stdout streaming from subprocess.Popen
-- Process tracking with start time and status monitoring
-- Graceful termination with SIGINT/SIGTERM handling
+**3. Process Management:**
+- Container lifecycle management via Docker API
+- Cross-container stdout/stderr streaming
+- Graceful container termination handling
 
 ## INSTALLATION PROCESS
 
 **One-Click Installer (install-dynamic-bounce-monitor.sh):**
 1. Docker dependency check (docker info)
-2. Image pull from Docker Hub (caioze/dynamic-bounce-monitor:latest)
+2. Orchestrator image pull from OCIR
 3. Local directory creation (~/.dynamic-bounce-monitor/, ~/DynamicBounceMonitor/)
-4. Launcher script generation with proper volume mount commands
+4. Launcher script generation with Docker socket mount
 5. Shell alias setup (dbm, dynamic-bounce)
 6. Desktop shortcut creation (macOS .command file)
 
 **Generated Launcher Script:**
 ```bash
 docker run -it --rm \
-    --name "dynamic-bounce-monitor" \
+    --name "dynamic-bounce-monitor-orchestrator" \
+    -v /var/run/docker.sock:/var/run/docker.sock \
     -v "$USER_HOME:$HOST_MOUNT" \
     -v "$USER_HOME/DynamicBounceMonitor/data:/app/data" \
     -v "$USER_HOME/DynamicBounceMonitor/output:/app/output" \
     -e "USER_HOME=$HOST_MOUNT" \
     -e "HOST_USER=$(whoami)" \
     -e "TERM=xterm-256color" \
-    caioze/dynamic-bounce-monitor:latest
+    $OCIR_REGISTRY/dynamic-bounce-monitor/orchestrator:latest
 ```
 
 ## BUILD AND DEPLOYMENT
 
-**Build Process (scripts/build.sh):**
-1. Dockerfile validation and dependency installation
-2. Application file copying with proper permissions
-3. Python package installation from requirements.txt
-4. Directory structure creation
-5. Startup script generation
+**Build Process:**
+1. Main orchestrator image with all dependencies
+2. Lightweight script containers with minimal dependencies
+3. Automated multi-image build pipeline via build-all.sh
+4. Version control for all images
 
 **Deployment Workflow:**
-1. Local development and testing
-2. Docker image build and tag
-3. Push to Docker Hub registry
-4. GitHub repository update with installer script
-5. Raw GitHub URL provides installer access
+1. Local testing of individual script images
+2. Integration testing with orchestrator
+3. Push all images to OCIR
+4. GitHub repository update with installer
+5. Deployment to Oracle Cloud VM
 
 **Distribution:**
-- Docker Hub: caioze/dynamic-bounce-monitor:latest
+- OCIR Registry: $OCIR_REGISTRY/dynamic-bounce-monitor/*
 - GitHub: https://github.com/Caio-Ze/docker-application-launcher
 - Installer: https://raw.githubusercontent.com/Caio-Ze/docker-application-launcher/master/install-dynamic-bounce-monitor.sh
+
+## TESTING REQUIREMENTS
+
+**Path and Permission Testing:**
+- Test with folders from various locations on macOS/Linux/Windows
+- Verify that containers can read/write to mounted volumes
+- Test with different user accounts if applicable
+- Verify path conversion works correctly across operating systems
+
+**Container Interaction Testing:**
+- Test orchestrator-to-script container communication
+- Verify volume mounts are correctly passed from orchestrator to script containers
+- Test error handling and recovery scenarios
 
 ## SECURITY AND ISOLATION
 
 **Container Security:**
-- Non-root user execution where possible
-- Limited host access through volume mounts only
-- No network exposure (terminal interface only)
-- Temporary container removal after exit (--rm flag)
+- Orchestrator container with Docker socket access
+- Individual script containers with minimal permissions
+- No direct network access for script containers
+- Temporary container removal after script completion
 
 **Data Access:**
-- Read/write access to user's home directory and specific mount points
+- Controlled through orchestrator's volume mounts
+- Script containers inherit necessary mounts only
 - No system-wide modifications on host
-- Complete uninstall possible by removing Docker image
-
-## PERFORMANCE CONSIDERATIONS
-
-**Resource Usage:**
-- Base image: ~1.31GB (includes ffmpeg, Python, and all dependencies)
-- Runtime: Minimal overhead, processes run natively in container
-- File I/O: Direct volume mount access, no copying overhead
-
-**Scaling:**
-- Stateless container design allows multiple instances
-- Per-user data isolation through volume mounts
-- Shared Docker image reduces storage overhead across team
+- Complete uninstall by removing all related images
 
 ## TROUBLESHOOTING LOGIC
 
 **Common Issues Handled:**
 1. Docker not running → Clear error message with startup instructions
-2. Image not found → Build instructions or pull command
-3. Permission errors → Volume mount verification and permission guidance
-4. Path not found → Automatic conversion suggestions and helpful tips
+2. Script image not found → Automatic pull from OCIR
+3. Permission errors → Docker socket and volume mount verification
+4. Path translation issues → Standardized conversion handling
 
 **Error Recovery:**
-- Graceful container shutdown on interruption
-- Process cleanup in launcher.py signal handlers
-- Container restart capability without data loss 
+- Individual container restart capability
+- Orchestrator container stability
+- Automatic cleanup of failed script containers
+- Detailed logging across all containers
+
+## TEST RESULTS
+
+We've successfully tested the multi-container architecture with the following results:
+
+1. **Path Handling**: The path utilities module (`path_utils.py`) correctly converts host paths to container paths:
+   - `/Users/username/...` → `/host/Users/username/...`
+   - `/home/username/...` → `/host/home/username/...`
+
+2. **Script Independence**: Each script container can operate independently with its own dependencies.
+
+3. **Directory Structure**: The new directory structure organizes scripts logically:
+   - `scripts/<script-name>/` - Contains script-specific files
+   - `applications/utils/` - Contains shared utilities
+
+4. **Runtime Considerations**:
+   - The orchestrator container contains all dependencies
+   - Each script container only needs minimal script-specific dependencies
+   - The orchestrator container needs Docker CLI access to launch other containers
+   - Paths are consistently handled across container boundaries 

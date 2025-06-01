@@ -1,0 +1,46 @@
+# Docker Application Launcher - Script Container Template
+# This file is used as a template for all script containers
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TERM=xterm-256color
+ARG PASSED_SCRIPT_NAME
+ENV SCRIPT_NAME=${PASSED_SCRIPT_NAME}
+
+# Install only essential system tools - most dependencies are in orchestrator
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory
+WORKDIR /app
+
+# Copy requirements.txt from the build context root
+COPY requirements.txt /app/requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Copy utils directory if it exists
+COPY utils /app/utils
+
+# Copy the script itself
+COPY script.SCRIPT_EXT /app/script.SCRIPT_EXT
+# The actual command will be added by build-all.sh
+
+# Make the script executable
+RUN chmod +x /app/script.*
+
+# Create standard directories (data and output are mounted from host)
+RUN mkdir -p /app/data /app/output
+
+# Labels for identification
+LABEL maintainer="Docker Application Launcher Team"
+LABEL description="Script container: ${SCRIPT_NAME}"
+LABEL version="1.0"
+
+# Default command will be set during build
+# Format: CMD ["python", "/app/script.py"] or CMD ["/bin/bash", "/app/script.sh"]

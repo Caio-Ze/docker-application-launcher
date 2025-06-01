@@ -3,7 +3,7 @@
 # Define the exclusion patterns for destination subfolder names
 # If a destination subfolder's name (in the parent directory) contains any of these
 # patterns within its first 10 characters, items will not be copied to it.
-exclusion_patterns=("PE" "BA" "RS" "RN" "PB" "POA" "AL" "xx" "XX" )
+exclusion_patterns=("PE" "BA" "RS" "RN" "PB" "POA" "AL" "xx" "XX" "AM" )
 
 # Arrays to track folders for summary
 copied_folders=()

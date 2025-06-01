@@ -1,0 +1,322 @@
+#!/bin/bash
+# Build script for Docker Application Launcher containers
+
+# Exit on error
+set -e
+
+# Configuration
+if [ -z "$OCIR_REGISTRY" ]; then
+    REGISTRY=${REGISTRY:-"localhost/docker-application-launcher"}
+else
+    REGISTRY=${REGISTRY:-"$OCIR_REGISTRY/docker-application-launcher"}
+fi
+TAG=${TAG:-"latest"}
+PUSH=${PUSH:-"false"}
+
+# Print header
+echo "🐳 Docker Application Launcher - Container Builder"
+echo "================================================="
+echo "Registry: $REGISTRY"
+echo "Tag: $TAG"
+echo "Push images: $PUSH"
+echo ""
+
+# Check Docker is running
+if ! docker info &> /dev/null; then
+    echo "❌ Docker is not running"
+    echo "Please start Docker Desktop or Docker service"
+    exit 1
+fi
+
+# Make scripts executable
+chmod +x $(dirname "$0")/*.sh
+chmod +x $(dirname "$0")/../launcher.py
+
+# Build the orchestrator container
+build_orchestrator() {
+    echo "🔨 Building orchestrator container..."
+    echo "This container includes all required dependencies for all scripts."
+    
+    # Build the main orchestrator image
+    docker build -t "$REGISTRY/orchestrator:$TAG" -f Dockerfile.orchestrator .
+    echo "✅ Orchestrator container built successfully"
+    
+    if [ "$PUSH" = "true" ]; then
+        echo "🚀 Pushing orchestrator container..."
+        docker push "$REGISTRY/orchestrator:$TAG"
+    fi
+}
+
+# Build a script container
+build_script_container() {
+    local name=$1
+    local script_type=$2
+    local script_path=$3
+    
+    echo "🔨 Building $name container..."
+    echo "This is a lightweight container - most dependencies are in the orchestrator."
+    
+    # Create temporary directory for script
+    mkdir -p "temp-build/$name"
+    
+    # Copy the path_utils.py for Python scripts
+    if [ "$script_type" = "py" ]; then
+        mkdir -p "temp-build/$name/utils"
+        cp "applications/utils/path_utils.py" "temp-build/$name/utils/path_utils.py"
+        echo "✅ Copied path_utils.py to temp-build/$name/utils/"
+    fi
+    
+    # Copy the script
+    cp "$script_path" "temp-build/$name/script.$script_type"
+    
+    # Create temporary Dockerfile
+    sed "s|SCRIPT_NAME|$name|g" Dockerfile.script-template > "temp-build/$name/Dockerfile"
+    
+    # Adjust CMD based on script type
+    if [ "$script_type" = "py" ]; then
+        echo "CMD [\"python\", \"/app/script.py\"]" >> "temp-build/$name/Dockerfile"
+    elif [ "$script_type" = "sh" ]; then
+        echo "CMD [\"/bin/bash\", \"/app/script.sh\"]" >> "temp-build/$name/Dockerfile"
+    fi
+    
+    # Build the container
+    docker build -t "$REGISTRY/$name:$TAG" -f "temp-build/$name/Dockerfile" "temp-build/$name"
+    
+    echo "✅ $name container built successfully"
+    
+    if [ "$PUSH" = "true" ]; then
+        echo "🚀 Pushing $name container..."
+        docker push "$REGISTRY/$name:$TAG"
+    fi
+}
+
+# Ensure path_utils.py exists
+ensure_path_utils() {
+    mkdir -p "applications/utils"
+    
+    if [ ! -f "applications/utils/path_utils.py" ]; then
+        echo "Creating path_utils.py in applications/utils..."
+        cat > "applications/utils/path_utils.py" <<'EOF'
+#!/usr/bin/env python3
+"""
+Path Utilities for Docker Application Launcher
+Handles host path conversions inside containers
+"""
+
+import os
+from pathlib import Path
+
+def convert_to_container_path(path):
+    """
+    Convert a host path to a container path if needed
+    
+    Args:
+        path (str): A path that might be from the host system
+        
+    Returns:
+        str: The path with /host prefix if needed
+    """
+    if not path:
+        return path
+    path = str(path).strip().strip('"\'')
+    if path.startswith('/host/'):
+        return path
+    if path.startswith('/Users/'):
+        return f"/host{path}"
+    if path.startswith('/home/'):
+        return f"/host{path}"
+    return path
+
+def get_host_user():
+    """
+    Get the username of the host user
+    
+    Returns:
+        str: The username of the host user
+    """
+    return os.environ.get('HOST_USER', os.environ.get('USER', 'user'))
+
+def get_host_home_dir():
+    """
+    Get the path to the host user's home directory
+    
+    Returns:
+        Path: Path object representing the host home directory
+    """
+    user = get_host_user()
+    if os.path.exists('/host/Users'):
+        return Path(f'/host/Users/{user}')
+    if os.path.exists('/host/home'):
+        return Path(f'/host/home/{user}')
+    return Path.home()
+
+def get_downloads_dir():
+    """
+    Get the path to the host user's Downloads directory
+    
+    Returns:
+        Path: Path object representing the Downloads directory
+    """
+    home_dir = get_host_home_dir()
+    return home_dir / 'Downloads'
+
+def get_default_output_folder():
+    """
+    Get the default output folder for applications
+    
+    Returns:
+        Path: Path object representing the default output folder
+    """
+    if os.path.exists('/app/output') and os.access('/app/output', os.W_OK):
+        return Path('/app/output')
+    return get_downloads_dir()
+
+def validate_path(path):
+    """
+    Check if a path exists, trying both as-is and with /host prefix
+    
+    Args:
+        path (str): Path to validate
+        
+    Returns:
+        tuple: (bool, str) - (is_valid, validated_path)
+    """
+    if os.path.exists(path):
+        return True, path
+    container_path = convert_to_container_path(path)
+    if container_path != path and os.path.exists(container_path):
+        return True, container_path
+    return False, path
+
+def is_running_in_container():
+    """
+    Check if the code is running inside a container
+    
+    Returns:
+        bool: True if running in container, False otherwise
+    """
+    # Check for common container indicators
+    if os.path.exists('/.dockerenv'):
+        return True
+        
+    if os.path.exists('/app'):
+        return True
+        
+    # Check cgroup (Linux)
+    try:
+        with open('/proc/1/cgroup', 'r') as f:
+            return 'docker' in f.read()
+    except:
+        pass
+        
+    return False
+EOF
+        chmod +x "applications/utils/path_utils.py"
+        echo "✅ Created path_utils.py with comprehensive path handling functions"
+    else
+        echo "✅ path_utils.py already exists"
+    fi
+}
+
+# Setup script containers from applications
+setup_script_containers() {
+    local applications_dir="applications"
+    local scripts_dir="scripts"
+    
+    echo "🔍 Setting up script containers from applications directory..."
+    
+    # Get list of Python and Shell scripts in applications directory (excluding utils/)
+    local py_scripts=$(find "$applications_dir" -maxdepth 1 -name "*.py" -type f -not -path "*/utils/*")
+    local sh_scripts=$(find "$applications_dir" -maxdepth 1 -name "*.sh" -type f -not -path "*/utils/*")
+    
+    # Process Python scripts
+    for script in $py_scripts; do
+        local script_name=$(basename "$script" .py)
+        local container_name=$(echo "$script_name" | tr '[:upper:]' '[:lower:]' | sed 's/_/-/g')
+        
+        echo "📦 Setting up container for $script_name ($container_name)"
+        
+        # Create script container directory
+        mkdir -p "$scripts_dir/$container_name"
+        
+        # Copy script
+        cp "$script" "$scripts_dir/$container_name/script.py"
+        chmod +x "$scripts_dir/$container_name/script.py"
+        
+        # Copy utils
+        mkdir -p "$scripts_dir/$container_name/utils"
+        cp "$applications_dir/utils/path_utils.py" "$scripts_dir/$container_name/utils/"
+        
+        echo "✅ Script container setup for $container_name"
+    done
+    
+    # Process Shell scripts
+    for script in $sh_scripts; do
+        local script_name=$(basename "$script" .sh)
+        local container_name=$(echo "$script_name" | tr '[:upper:]' '[:lower:]' | sed 's/_/-/g')
+        
+        echo "📦 Setting up container for $script_name ($container_name)"
+        
+        # Create script container directory
+        mkdir -p "$scripts_dir/$container_name"
+        
+        # Copy script
+        cp "$script" "$scripts_dir/$container_name/script.sh"
+        chmod +x "$scripts_dir/$container_name/script.sh"
+        
+        echo "✅ Script container setup for $container_name"
+    done
+}
+
+# Main execution
+echo "🚀 Starting build process..."
+
+# Create temp directory
+mkdir -p temp-build
+
+# Ensure path_utils.py exists
+ensure_path_utils
+
+# Setup script containers from applications
+setup_script_containers
+
+# Build orchestrator
+build_orchestrator
+
+# Build all script containers
+echo "🔍 Identifying script containers..."
+for script_dir in scripts/*/; do
+    # Skip directories that don't contain scripts
+    if [[ "$script_dir" == "scripts/common/" ]]; then
+        continue
+    fi
+    
+    script_name=$(basename "$script_dir")
+    
+    if [ -f "$script_dir/script.py" ]; then
+        echo "🐍 Found Python script: $script_name"
+        build_script_container "$script_name" "py" "$script_dir/script.py"
+    elif [ -f "$script_dir/script.sh" ]; then
+        echo "🐚 Found Shell script: $script_name"
+        build_script_container "$script_name" "sh" "$script_dir/script.sh"
+    else
+        echo "⚠️ Warning: No script found in $script_dir, skipping"
+    fi
+done
+
+# Clean up
+echo "🧹 Cleaning up temporary build files..."
+rm -rf temp-build
+
+echo ""
+echo "✅ All containers built successfully!"
+echo ""
+echo "📋 Images:"
+docker images | grep "$REGISTRY" | sort
+
+echo ""
+echo "🚀 To run the orchestrator:"
+echo "docker run --rm -it -v /var/run/docker.sock:/var/run/docker.sock -v \$HOME:/host\$HOME $REGISTRY/orchestrator:$TAG"
+echo ""
+echo "📋 Or use the convenience script:"
+echo "./scripts/run-orchestrator.sh" 

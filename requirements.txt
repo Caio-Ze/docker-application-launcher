@@ -1,11 +1,27 @@
-# Core dependencies
-requests>=2.31.0
+# Core dependencies for Docker Application Launcher Orchestrator
+# This includes dependencies for all script containers
+
+# UI and interaction
+rich==13.3.5
+flask==2.3.2
+Werkzeug==2.3.6
+
+# HTTP and API
+requests==2.31.0
+PyYAML==6.0
 
 # Audio/Video processing
 pyffmpeg>=2.4.2.0
 yt-dlp>=2023.12.30
 
 # Utility libraries
-python-dotenv>=1.0.0
-colorama>=0.4.6
-rich>=13.7.0 
+python-dotenv==1.0.0
+colorama==0.4.6
+pathlib==1.0.1
+tqdm==4.65.0
+pytube==15.0.0
+pydub==0.25.1
+natsort==8.3.1
+
+# Add any additional dependencies for new script containers here
+# Example: transformers>=4.35.0  # For AI-based audio processing 
