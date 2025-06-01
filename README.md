@@ -1,168 +1,243 @@
-# Docker Application Launcher
+# 🎵 Dynamic Bounce Monitor - Docker Application Launcher
 
-A simple, menu-driven interface for managing multiple Docker applications. Perfect for teams that need to run multiple Docker containers without remembering complex commands.
+A comprehensive, user-friendly Docker application launcher for audio and video processing tools. Perfect for teams that need to run multiple Python scripts and shell tools without dealing with dependencies, installations, or complex commands.
 
-## 🚀 Quick Installation
+## 🚀 Quick Start
 
-**One-command installation:**
+**One-command installation for end users:**
 ```bash
-curl -sSL https://raw.githubusercontent.com/Caio-Ze/docker-application-launcher/master/install.sh | bash
+curl -sSL https://your-domain.com/install-dynamic-bounce-monitor.sh | bash
 ```
 
 ## ✅ Requirements
 
-- **macOS** (Intel or Apple Silicon)
+- **macOS, Linux, or Windows** (with Docker Desktop)
 - **Docker Desktop** installed and running
   - Download: https://www.docker.com/products/docker-desktop/
-- **Terminal** access
+- **Terminal** access for interactive operations
 
 ## 📋 Features
 
-- 🎯 **Simple Menu Interface** - No need to remember Docker commands
-- 🔄 **Real-time Status** - See running containers at a glance
-- 🛑 **Easy Management** - Start/stop containers with a few keystrokes
-- 📱 **Desktop Integration** - Double-click shortcut for non-technical users
-- ⚡ **Auto-download** - Docker images downloaded automatically as needed
-- 🔧 **Terminal Aliases** - Quick access with `dockerapps` or `da` commands
+### 🎯 **Rich Terminal Interface**
+- **💻 Interactive Menu System** - Beautiful, categorized terminal interface
+- **📊 Real-time Process Monitoring** - Track running applications and their status
+- **🔧 Built-in File Browser** - Easy access to input/output directories
+- **⚡ One-Click Application Launch** - No need to remember complex commands
+
+### 🔄 **Complete Application Suite**
+- **🎤 Voice Cleaner API v1 & v2** - Clean audio using ElevenLabs and Auphonic APIs
+- **🔄 WAV/MP3 Converter** - Convert between audio formats with quality options
+- **🎵 Audio Enhancer** - Apply volume boost, compression and loudness normalization
+- **📺 YouTube Downloader** - Download audio/video with ffmpeg processing
+- **🎬 Video Optimizer** - Optimize videos for 480p with H.264 encoding
+- **☁️ Google Drive Manager** - Manage Google Drive cache and Finder favorites
+- **📁 PTX Template Copier** - Copy .ptx files and Audio Files to São Paulo template folders
+- **📁 PTX Template Copier (No AM)** - PTX copying excluding AM folders
+- **🗂️ Folder Structure Creator** - Create folder structures from clipboard content
+
+### 🛠️ **Enterprise Features**
+- **🐳 Zero Installation** - Everything runs in Docker containers
+- **📱 Desktop Integration** - One-click shortcuts for non-technical users
+- **⚡ Auto-dependency Management** - All Python packages and system tools included
+- **🔧 Real-time Process Management** - Start, stop, and monitor applications
+- **📊 Status Monitoring** - Live process status and runtime information
+- **🗂️ File Browser** - Easy access to input/output directories
 
 ## 🎮 Usage
 
-After installation, you can launch the application in several ways:
-
-### Terminal Commands
+### Terminal Interface
 ```bash
-dockerapps    # Short alias
-da           # Even shorter alias
-docker-app-launcher  # Full command
+# Using aliases (after installation)
+dbm                    # Short alias
+dynamic-bounce         # Full alias
+
+# Direct execution
+~/.dynamic-bounce-monitor/launch.sh
+
+# Docker command
+./scripts/run.sh
 ```
 
-### Desktop Shortcut
-Double-click **"Docker Apps.command"** on your desktop
+### Desktop Shortcuts
+- **macOS**: Double-click "Dynamic Bounce Monitor.command" on desktop
+- **Windows/Linux**: Use created shortcuts or terminal commands
 
-### Direct Execution
+## 🏗️ Development & Deployment
+
+### Building the Docker Image
 ```bash
-~/.docker-app-launcher/scripts/docker-app-launcher.sh
+# Clone the repository
+git clone <your-repo-url>
+cd docker-application-launcher
+
+# Build the image
+./scripts/build.sh
+
+# Test locally
+./scripts/run.sh
 ```
 
-## 📁 Adding Applications
-
-Applications are configured using JSON files in `~/.docker-app-launcher/apps/`
-
-### Example Configuration
-```json
-{
-  "name": "My Web App",
-  "description": "A sample web application",
-  "image": "nginx:latest",
-  "ports": [
-    {
-      "host": "8080",
-      "container": "80",
-      "description": "Web interface"
-    }
-  ],
-  "volumes": [
-    {
-      "host": "$HOME/data",
-      "container": "/usr/share/nginx/html",
-      "description": "Web content"
-    }
-  ],
-  "environment": [
-    {
-      "name": "ENV_VAR",
-      "value": "production",
-      "description": "Environment setting"
-    }
-  ],
-  "interactive": false,
-  "remove_after_exit": true,
-  "additional_flags": "--restart unless-stopped"
-}
-```
-
-### Configuration Options
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Display name for the application |
-| `description` | string | Brief description of what the app does |
-| `image` | string | Docker image name and tag |
-| `ports` | array | Port mappings (host:container) |
-| `volumes` | array | Volume mounts (host:container) |
-| `environment` | array | Environment variables |
-| `interactive` | boolean | Run with `-it` flags |
-| `remove_after_exit` | boolean | Add `--rm` flag |
-| `additional_flags` | string | Any additional Docker flags |
-
-## 🏢 Team Installation
-
-For team-wide deployment, share this installation command:
-
+### Creating the Installer
 ```bash
-curl -sSL https://raw.githubusercontent.com/Caio-Ze/docker-application-launcher/master/install.sh | bash
+# Generate the one-click installer
+./scripts/create-installer.sh
+
+# This creates: install-dynamic-bounce-monitor.sh
 ```
 
-Each team member will get:
-- ✅ Menu-driven interface
-- ✅ Desktop shortcuts
-- ✅ Terminal aliases
-- ✅ Pre-configured applications
+### Deployment Options
 
-## 📂 Directory Structure
+#### Option 1: Docker Hub (Recommended)
+```bash
+# Tag and push to Docker Hub
+docker tag dynamic-bounce-monitor:latest your-username/dynamic-bounce-monitor:latest
+docker push your-username/dynamic-bounce-monitor:latest
 
-```
-~/.docker-app-launcher/
-├── scripts/
-│   └── docker-app-launcher.sh    # Main launcher script
-└── apps/
-    ├── app-template.json          # Template for new apps
-    └── dynamic-bounce-manager.json # Example app configuration
+# Update installer script with your image name
+# Then host the installer on your web server
 ```
 
-## 🔧 Management Features
+#### Option 2: Private Registry
+```bash
+# Push to your private registry
+docker tag dynamic-bounce-monitor:latest your-registry.com/dynamic-bounce-monitor:latest
+docker push your-registry.com/dynamic-bounce-monitor:latest
+```
 
-The launcher provides several management options:
+#### Option 3: Direct Distribution
+```bash
+# Save image as file
+docker save dynamic-bounce-monitor:latest | gzip > dynamic-bounce-monitor.tar.gz
 
-1. **📱 Run Applications** - Select and start any configured app
-2. **📊 Show Running Containers** - View currently active containers
-3. **🛑 Stop Containers** - Stop running containers by selection
-4. **📋 Show App Details** - View detailed configuration for any app
-5. **🔄 Refresh** - Update the display with current status
-6. **❌ Exit** - Close the launcher
+# Load on target machine
+gunzip -c dynamic-bounce-monitor.tar.gz | docker load
+```
+
+## 📂 Project Structure
+
+```
+docker-application-launcher/
+├── Dockerfile                          # Main container definition
+├── requirements.txt                    # Python dependencies
+├── launcher.py                         # Terminal interface
+├── applications/                       # Python scripts and shell tools
+│   ├── voice_cleaner_API1.py
+│   ├── voice_cleaner_API2.py
+│   ├── WAVMP3_FIX.py
+│   ├── EXTRA_PARA_NET_SPACE_FIX.py
+│   ├── youtube_downloader_PYFFMPEG.py
+│   ├── optimize_videos_PYFFMPEG.py
+│   ├── google_drive_manager_fixed.sh
+│   ├── COPY_PTX_CRF.sh
+│   ├── COPY_PTX_CRF**SEM_AM.sh
+│   └── PASTAS_CRF.py
+├── scripts/                            # Build and deployment scripts
+│   ├── build.sh                        # Build Docker image
+│   ├── run.sh                          # Run container
+│   └── create-installer.sh             # Generate installer
+└── install-dynamic-bounce-monitor.sh   # Generated installer
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+- `USER_HOME`: Mounted user home directory
+- `HOST_USER`: Current user name
+- `DATA_DIR`: `/app/data` (input files)
+- `OUTPUT_DIR`: `/app/output` (processed files)
+- `TEMP_DIR`: `/app/temp` (temporary files)
+
+### Volume Mounts
+- **User Home**: `$HOME` → `/host/Users/$(whoami)` (full access)
+- **Data Directory**: `$HOME/DynamicBounceMonitor/data` → `/app/data`
+- **Output Directory**: `$HOME/DynamicBounceMonitor/output` → `/app/output`
+
+## 👥 Team Deployment
+
+### For 20 Users (3 Administrators)
+
+#### Administrator Setup
+1. **Build and test** the Docker image
+2. **Push to Docker registry** (Docker Hub or private)
+3. **Host the installer script** on a web server
+4. **Share the installation command** with team
+
+#### End User Installation
+```bash
+# One command - no technical knowledge required
+curl -sSL https://your-domain.com/install-dynamic-bounce-monitor.sh | bash
+```
+
+#### User Experience
+- **Desktop shortcut** for one-click access
+- **Terminal aliases** for power users
+- **Rich terminal interface** with categorized applications
+- **Automatic updates** when you push new images
 
 ## 🆘 Troubleshooting
 
 ### Common Issues
 
 1. **"Docker is not running"**
-   - Start Docker Desktop and wait for it to fully load
-   - Check the Docker icon in your menu bar
+   ```bash
+   # Start Docker Desktop and wait for it to fully load
+   # Check the Docker icon in your system tray/menu bar
+   ```
 
-2. **"Command not found"**
-   - Restart your terminal after installation
-   - Or run: `source ~/.zshrc`
+2. **"Image not found"**
+   ```bash
+   # Build the image first
+   ./scripts/build.sh
+   
+   # Or pull from registry
+   docker pull your-username/dynamic-bounce-monitor:latest
+   ```
 
 3. **"Permission denied"**
-   - Make sure Docker Desktop is running
-   - Check that your user is in the docker group
+   ```bash
+   # Make sure Docker Desktop is running
+   # Check that your user can run Docker commands
+   docker run hello-world
+   ```
 
-4. **"jq not found"**
-   - The installer will attempt to install jq automatically
-   - If it fails, install manually: `brew install jq`
+4. **"Files not accessible"**
+   ```bash
+   # Check volume mounts and permissions
+   # Files should be in: ~/DynamicBounceMonitor/data/
+   ```
 
 ### Getting Help
 
-- 📧 **Issues**: https://github.com/Caio-Ze/docker-application-launcher/issues
-- 📖 **Documentation**: This README
-- 🔧 **Configuration**: Check `~/.docker-app-launcher/apps/app-template.json`
+- 📧 **Issues**: Create GitHub issues for bugs
+- 📖 **Documentation**: This README and inline help
+- 🔧 **Configuration**: Check Docker logs: `docker logs dynamic-bounce-monitor`
 
 ## 🎯 Perfect For
 
-- **Development Teams** - Standardize Docker workflows
-- **Non-Technical Users** - Simple interface for complex applications
-- **Multiple Projects** - Manage 10-20+ Docker applications easily
-- **Daily Use** - Quick access to frequently used containers
+- **🎵 Audio Production Teams** - Streamlined voice cleaning and processing
+- **📺 Content Creators** - YouTube downloading and video optimization
+- **🏢 Non-Technical Users** - Simple terminal interface for complex tools
+- **👥 Mixed Teams** - Both technical and non-technical users
+- **☁️ Remote Teams** - Consistent environment across all machines
+
+## 🔒 Security Considerations
+
+- **Container Isolation** - Applications run in isolated Docker containers
+- **Limited Host Access** - Only mounted directories are accessible
+- **No System Modifications** - Host system remains unchanged
+- **Easy Cleanup** - Complete removal with `docker rmi dynamic-bounce-monitor`
+
+## 📈 Scaling & Cloud Deployment
+
+### Cloud Deployment Options
+- **AWS ECS/Fargate** - Serverless container deployment
+- **Google Cloud Run** - Fully managed container platform
+- **Azure Container Instances** - Simple container hosting
+- **Kubernetes** - For large-scale deployments
+
+### Load Balancing
+- Multiple container instances for high availability
+- Shared storage for input/output files
 
 ## 📄 License
 
@@ -170,4 +245,19 @@ MIT License - feel free to use and modify for your team's needs.
 
 ---
 
-**Made with ❤️ for teams who want Docker without the complexity**
+**🎵 Made with ❤️ for teams who want powerful audio/video tools without the complexity**
+
+### Quick Commands Reference
+
+```bash
+# Build and test
+./scripts/build.sh
+./scripts/run.sh
+
+# Create installer
+./scripts/create-installer.sh
+
+# Deploy to Docker Hub
+docker tag dynamic-bounce-monitor:latest username/dynamic-bounce-monitor:latest
+docker push username/dynamic-bounce-monitor:latest
+```

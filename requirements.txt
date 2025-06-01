@@ -1,0 +1,11 @@
+# Core dependencies
+requests>=2.31.0
+
+# Audio/Video processing
+pyffmpeg>=2.4.2.0
+yt-dlp>=2023.12.30
+
+# Utility libraries
+python-dotenv>=1.0.0
+colorama>=0.4.6
+rich>=13.7.0 
