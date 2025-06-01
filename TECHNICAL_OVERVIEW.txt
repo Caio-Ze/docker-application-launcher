@@ -1,0 +1,161 @@
+DYNAMIC BOUNCE MONITOR - TECHNICAL OVERVIEW
+==========================================
+
+## ARCHITECTURE
+
+**Core Components:**
+- Docker container (Python 3.11-slim base)
+- Rich terminal interface (launcher.py)
+- 10 audio/video processing applications
+- Automated installer script
+- Volume mount system for file access
+
+**Technology Stack:**
+- Python 3.11 with Rich library for UI
+- Docker for containerization and dependency isolation
+- Bash scripts for system integration
+- FFmpeg, yt-dlp, and custom Python tools
+
+## DOCKER CONTAINER STRUCTURE
+
+**Base Image:** python:3.11-slim
+**System Dependencies:** ffmpeg, curl, wget, git, jq, nano, vim, htop, tree, unzip
+**Python Dependencies:** requests, pyffmpeg, yt-dlp, python-dotenv, colorama, rich
+
+**Directory Structure:**
+```
+/app/
+├── applications/          # All processing scripts
+├── launcher.py           # Main terminal interface
+├── data/                # Input files (mounted volume)
+├── output/              # Processed files (mounted volume)
+├── temp/                # Temporary processing files
+└── scripts/             # Build and utility scripts
+```
+
+## VOLUME MOUNT SYSTEM
+
+**Critical Path Conversion:**
+- Host paths (/Users/username/) → Container paths (/host/Users/username/)
+- Automatic conversion in applications when users drag-and-drop folders
+- Bidirectional file access between host and container
+
+**Mount Points:**
+- $HOME → /host/Users/$(whoami)           # Full home directory access
+- ~/DynamicBounceMonitor/data → /app/data # Input files
+- ~/DynamicBounceMonitor/output → /app/output # Output files
+
+## APPLICATION LAUNCHER
+
+**launcher.py Features:**
+- Rich terminal UI with categorized menus
+- Real-time process monitoring and management
+- Interactive shell access within container
+- File browser for mounted directories
+- Signal handling for graceful shutdown
+
+**Application Categories:**
+1. Audio Processing (4 apps) - Voice cleaning, WAV/MP3 conversion, enhancement
+2. Content Acquisition (1 app) - YouTube downloading
+3. Video Processing (1 app) - Video optimization
+4. Cloud Storage (1 app) - Google Drive management
+5. File Management (3 apps) - PTX copying, folder structure creation
+
+## KEY TECHNICAL SOLUTIONS
+
+**1. pbpaste Replacement:**
+- Problem: macOS clipboard access fails in Docker containers
+- Solution: Manual user input with "FIM" terminator instead of pbpaste command
+- Implementation: get_lines_from_clipboard() function in PASTAS_CRF.py
+
+**2. Path Conversion Logic:**
+- Problem: Drag-and-drop gives host paths, container needs container paths
+- Solution: Automatic prefix conversion in get_destination_directory_from_user()
+- Logic: /Users/* → /host/Users/*, /home/* → /host/home/*
+
+**3. Interactive Process Management:**
+- Real-time stdout streaming from subprocess.Popen
+- Process tracking with start time and status monitoring
+- Graceful termination with SIGINT/SIGTERM handling
+
+## INSTALLATION PROCESS
+
+**One-Click Installer (install-dynamic-bounce-monitor.sh):**
+1. Docker dependency check (docker info)
+2. Image pull from Docker Hub (caioze/dynamic-bounce-monitor:latest)
+3. Local directory creation (~/.dynamic-bounce-monitor/, ~/DynamicBounceMonitor/)
+4. Launcher script generation with proper volume mount commands
+5. Shell alias setup (dbm, dynamic-bounce)
+6. Desktop shortcut creation (macOS .command file)
+
+**Generated Launcher Script:**
+```bash
+docker run -it --rm \
+    --name "dynamic-bounce-monitor" \
+    -v "$USER_HOME:$HOST_MOUNT" \
+    -v "$USER_HOME/DynamicBounceMonitor/data:/app/data" \
+    -v "$USER_HOME/DynamicBounceMonitor/output:/app/output" \
+    -e "USER_HOME=$HOST_MOUNT" \
+    -e "HOST_USER=$(whoami)" \
+    -e "TERM=xterm-256color" \
+    caioze/dynamic-bounce-monitor:latest
+```
+
+## BUILD AND DEPLOYMENT
+
+**Build Process (scripts/build.sh):**
+1. Dockerfile validation and dependency installation
+2. Application file copying with proper permissions
+3. Python package installation from requirements.txt
+4. Directory structure creation
+5. Startup script generation
+
+**Deployment Workflow:**
+1. Local development and testing
+2. Docker image build and tag
+3. Push to Docker Hub registry
+4. GitHub repository update with installer script
+5. Raw GitHub URL provides installer access
+
+**Distribution:**
+- Docker Hub: caioze/dynamic-bounce-monitor:latest
+- GitHub: https://github.com/Caio-Ze/docker-application-launcher
+- Installer: https://raw.githubusercontent.com/Caio-Ze/docker-application-launcher/master/install-dynamic-bounce-monitor.sh
+
+## SECURITY AND ISOLATION
+
+**Container Security:**
+- Non-root user execution where possible
+- Limited host access through volume mounts only
+- No network exposure (terminal interface only)
+- Temporary container removal after exit (--rm flag)
+
+**Data Access:**
+- Read/write access to user's home directory and specific mount points
+- No system-wide modifications on host
+- Complete uninstall possible by removing Docker image
+
+## PERFORMANCE CONSIDERATIONS
+
+**Resource Usage:**
+- Base image: ~1.31GB (includes ffmpeg, Python, and all dependencies)
+- Runtime: Minimal overhead, processes run natively in container
+- File I/O: Direct volume mount access, no copying overhead
+
+**Scaling:**
+- Stateless container design allows multiple instances
+- Per-user data isolation through volume mounts
+- Shared Docker image reduces storage overhead across team
+
+## TROUBLESHOOTING LOGIC
+
+**Common Issues Handled:**
+1. Docker not running → Clear error message with startup instructions
+2. Image not found → Build instructions or pull command
+3. Permission errors → Volume mount verification and permission guidance
+4. Path not found → Automatic conversion suggestions and helpful tips
+
+**Error Recovery:**
+- Graceful container shutdown on interruption
+- Process cleanup in launcher.py signal handlers
+- Container restart capability without data loss 
