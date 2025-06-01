@@ -44,8 +44,8 @@ check_docker() {
 
 # Function to load app configurations
 load_apps() {
-    declare -g apps=()
-    declare -g app_files=()
+    apps=()
+    app_files=()
     
     if [[ -d "$APPS_DIR" ]]; then
         while IFS= read -r -d '' file; do
