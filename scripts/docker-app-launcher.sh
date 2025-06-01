@@ -44,8 +44,8 @@ check_docker() {
 
 # Function to load app configurations
 load_apps() {
-    local apps=()
-    local app_files=()
+    declare -g apps=()
+    declare -g app_files=()
     
     if [[ -d "$APPS_DIR" ]]; then
         while IFS= read -r -d '' file; do
@@ -58,10 +58,6 @@ load_apps() {
             fi
         done < <(find "$APPS_DIR" -name "*.json" -print0 2>/dev/null)
     fi
-    
-    echo "${#apps[@]}"
-    printf '%s\n' "${apps[@]}"
-    printf '%s\n' "${app_files[@]}"
 }
 
 # Function to get running containers
@@ -171,11 +167,9 @@ show_menu() {
     print_color $CYAN "=============================="
     echo ""
     
-    # Load apps
-    local app_data=($(load_apps))
-    local app_count=${app_data[0]}
-    local apps=("${app_data[@]:1:$app_count}")
-    local app_files=("${app_data[@]:$((app_count+1)):$app_count}")
+    # Load apps using global arrays
+    load_apps
+    local app_count=${#apps[@]}
     
     if [[ $app_count -eq 0 ]]; then
         print_color $YELLOW "📭 No applications configured."
