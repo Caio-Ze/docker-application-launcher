@@ -1,0 +1,29 @@
+{
+  "name": "My Application",
+  "description": "Description of what this application does",
+  "image": "docker-image:tag",
+  "ports": [
+    {
+      "host": "8080",
+      "container": "80",
+      "description": "Web interface"
+    }
+  ],
+  "volumes": [
+    {
+      "host": "$HOME/data",
+      "container": "/app/data",
+      "description": "Data directory"
+    }
+  ],
+  "environment": [
+    {
+      "name": "ENV_VAR",
+      "value": "value",
+      "description": "Environment variable description"
+    }
+  ],
+  "interactive": true,
+  "remove_after_exit": true,
+  "additional_flags": "--rm"
+}
